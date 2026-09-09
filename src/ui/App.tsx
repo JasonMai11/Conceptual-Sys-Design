@@ -14,6 +14,7 @@ import {
   setOnboarded,
   totalRequests,
   writeSavedDesigns,
+  type Architecture,
   type DesignDocument,
   type NodeKind,
 } from '../sim';
@@ -198,6 +199,54 @@ export function App() {
     [push, saved],
   );
 
+  /**
+   * Every wholesale swap of the design goes through here so it behaves the
+   * same way each time: stop any run, re-frame the canvas, and offer one click
+   * back to what was there before. Losing a design to a misclick is the one
+   * mistake this app should never make you pay for.
+   */
+  const replaceArchitecture = useCallback(
+    (next: Architecture, message: string, options?: { offerUndo?: boolean }) => {
+      const previous = cloneArchitecture(architecture);
+      sim.reset();
+      rawDispatch({ type: 'replace', architecture: next });
+      setSelection(null);
+      setFitSignal((n) => n + 1);
+      push(
+        message,
+        'info',
+        options?.offerUndo
+          ? {
+              label: 'Undo',
+              onClick: () => {
+                sim.reset();
+                rawDispatch({ type: 'replace', architecture: previous });
+                setSelection(null);
+                setFitSignal((n) => n + 1);
+                push('Put your design back.');
+              },
+            }
+          : undefined,
+      );
+    },
+    [architecture, push, rawDispatch, sim],
+  );
+
+  /** Strip the canvas back to just the traffic source and start again. */
+  const clearCanvas = useCallback(() => {
+    const client =
+      architecture.nodes.find((n) => n.kind === 'client') ??
+      challenge.startingArchitecture.nodes.find((n) => n.kind === 'client');
+    replaceArchitecture(
+      {
+        nodes: client ? [{ ...client, position: { ...client.position }, config: { ...client.config } }] : [],
+        edges: [],
+      },
+      'Canvas cleared — the traffic source is all that is left.',
+      { offerUndo: true },
+    );
+  }, [architecture.nodes, challenge.startingArchitecture.nodes, replaceArchitecture]);
+
   const loadDesign = useCallback(
     (doc: DesignDocument) => {
       sim.reset();
@@ -240,13 +289,15 @@ export function App() {
             lastResult={sim.lastRun?.result ?? null}
             locked={sim.locked}
             onShowExample={() => setModal('example')}
-            onRestore={() => {
-              sim.reset();
-              rawDispatch({ type: 'replace', architecture: challenge.startingArchitecture });
-              setSelection(null);
-              setFitSignal((n) => n + 1);
-              push('Back to the starting design.');
-            }}
+            onRestore={() =>
+              replaceArchitecture(
+                challenge.startingArchitecture,
+                'Back to the starting design.',
+                { offerUndo: true },
+              )
+            }
+            onClear={clearCanvas}
+            canClear={architecture.nodes.length > 1 || architecture.edges.length > 0}
           />
           <Palette
             challenge={challenge}

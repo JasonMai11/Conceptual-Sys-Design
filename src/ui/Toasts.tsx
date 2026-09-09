@@ -1,10 +1,20 @@
 import { useCallback, useRef, useState } from 'react';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Toast {
   id: number;
   message: string;
   tone: 'info' | 'bad';
+  action?: ToastAction;
 }
+
+/** Toasts carrying an action stay up longer — you have to decide to use them. */
+const PLAIN_MS = 6000;
+const WITH_ACTION_MS = 12000;
 
 export function useToasts() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -15,10 +25,11 @@ export function useToasts() {
   }, []);
 
   const push = useCallback(
-    (message: string, tone: Toast['tone'] = 'info') => {
+    (message: string, tone: Toast['tone'] = 'info', action?: ToastAction) => {
       const id = nextId.current++;
-      setToasts((list) => [...list.slice(-2), { id, message, tone }]);
-      window.setTimeout(() => dismiss(id), 6000);
+      setToasts((list) => [...list.slice(-2), { id, message, tone, action }]);
+      window.setTimeout(() => dismiss(id), action ? WITH_ACTION_MS : PLAIN_MS);
+      return id;
     },
     [dismiss],
   );
@@ -32,7 +43,19 @@ export function Toasts({ toasts, dismiss }: { toasts: Toast[]; dismiss: (id: num
     <div className="toasts" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`toast${t.tone === 'bad' ? ' bad' : ''}`}>
-          <span>{t.message}</span>
+          <span className="toast-msg">{t.message}</span>
+          {t.action && (
+            <button
+              type="button"
+              className="toast-action"
+              onClick={() => {
+                t.action!.onClick();
+                dismiss(t.id);
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
           <button type="button" className="toast-close" onClick={() => dismiss(t.id)} aria-label="Dismiss">
             ✕
           </button>

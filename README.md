@@ -49,8 +49,12 @@ npm run verify     # build and test together
    see whether your change actually helped or just moved the queue somewhere else.
 
 If you get stuck, **Show an example solution** reveals one passing design (and three other
-routes to a pass) with its real measured scores. **Restore starting design** puts you back
-to the beginning.
+routes to a pass) with its real measured scores.
+
+To start over there are two buttons under the brief. **Restore starting design** puts the
+original client → application server → database back. **Clear canvas** strips everything
+except the traffic source, so you can build from an empty canvas. Both offer an **Undo** in
+the message that appears, so a misclick costs nothing.
 
 ### Passing criteria
 
@@ -235,4 +239,6 @@ the assumptions and example modals, and both light and dark palettes.
 - **Connection rules are fixed per model, not per challenge.** The allowed-pair table lives
   in the component catalog rather than in the challenge, so a future challenge cannot
   currently narrow it.
-- **No undo.** Restore starting design and the saved-design list are the recovery paths.
+- **Undo is per-design, not per-edit.** Clear canvas, Restore starting design and loading a
+  saved design each offer one Undo. Individual edits — deleting a block, changing a slider —
+  cannot be undone; the saved-design list is the recovery path for those.

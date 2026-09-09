@@ -15,11 +15,22 @@ interface Props {
   lastResult: RunResult | null;
   onShowExample: () => void;
   onRestore: () => void;
+  onClear: () => void;
+  /** False when the canvas is already back to just the traffic source. */
+  canClear: boolean;
   locked: boolean;
 }
 
 /** States the problem, the numbers, and the bar to clear — all of it explicit. */
-export function ChallengePanel({ challenge, lastResult, onShowExample, onRestore, locked }: Props) {
+export function ChallengePanel({
+  challenge,
+  lastResult,
+  onShowExample,
+  onRestore,
+  onClear,
+  canClear,
+  locked,
+}: Props) {
   const w = useMemo(() => summarizeWorkload(challenge), [challenge]);
   const m = lastResult?.metrics;
   const c = challenge.criteria;
@@ -211,13 +222,36 @@ export function ChallengePanel({ challenge, lastResult, onShowExample, onRestore
       </details>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" className="btn btn-sm" onClick={onRestore} disabled={locked}>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={onRestore}
+          disabled={locked}
+          title="Put the original client → application server → database design back"
+        >
           Restore starting design
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={onClear}
+          disabled={locked || !canClear}
+          title={
+            canClear
+              ? 'Remove every block and connection except the traffic source, and build again from scratch'
+              : 'The canvas is already empty'
+          }
+        >
+          Clear canvas
         </button>
         <button type="button" className="btn btn-sm" onClick={onShowExample}>
           Show an example solution
         </button>
       </div>
+      <p className="tiny muted">
+        Both of these can be undone from the message that appears, so nothing is lost by trying
+        something and starting over.
+      </p>
     </div>
   );
 }
